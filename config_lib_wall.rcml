@@ -1,0 +1,5 @@
+IID "config_lib_wall_function"
+
+export function func(x) {
+    return 100*math.sin(x/100);
+}
