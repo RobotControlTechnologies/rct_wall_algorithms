@@ -1,0 +1,202 @@
+include_rcml_lib lib_wall_function "lib_wall.rcml.pc"
+
+detail cube [
+  path_to_3d_model: "cube",
+  weight: 500,
+  sizes: [
+    x: 30,
+    y: 80,
+    z: 20.5,
+    residual: $cube.sizes.y - $cube.sizes.x * 2
+  ],
+  scales: [
+    x: 1.0,
+    y: 1.0,
+    z: 1.0
+  ],
+  spawn: [
+    x: 317,
+    y: 337,
+    z: 0,
+    angle_z: 1.4
+  ],
+  angles: [
+    x: 0,
+    y: 0,
+    z: 0,
+    w: 0
+  ],
+  catch_points:[
+    two_fingers: [
+      catch_point:[
+        x: $cube.sizes.x / 2,
+        y: $cube.sizes.y / 2,
+        z: $cube.sizes.z / 2,
+        angle_z: $cube.angles.z
+      ],
+      finger_distance: $cube.sizes.x,
+      safe_distance: 30,
+      finger_force: 40
+    ],
+    suction_cup:[
+      catch_point:[
+        x: $cube.sizes.x / 2,
+        y: $cube.sizes.y / 2,
+        z: $cube.sizes.z,
+        angle_z: $cube.angles.z
+      ],
+      radius_max: 10
+    ]
+  ]
+]
+
+function count_angle(x1, y1, x2, y2) {
+    return math.atan((x1 - x2) / (y2 - y1));
+}
+
+function is_inside(x, y, w_half, h_half) {
+    res = 1;
+
+    if ((x < - w_half) || (x > w_half) || (y < -h_half) || (y > h_half)) {
+        res = 0;
+    }
+
+    return res;
+}
+
+function check_brick(x, y, angle_brick, dx, dy, w, h) {
+    res = 1;
+    w = w / 2;
+    h = h / 2;
+    rad_scale = 3.1415 / 180;
+
+    x_brick = -dx / 2 * math.cos(angle_brick) + dy / 2 * math.sin(angle_brick) + x;
+    y_brick = -dx / 2 * math.sin(angle_brick) - dy / 2 * math.cos(angle_brick) + y;
+
+    res = res * is_inside(x_brick, y_brick, w, h);
+
+    x_brick = -dx / 2 * math.cos(angle_brick) - dy / 2 * math.sin(angle_brick) + x;
+    y_brick = -dx / 2 * math.sin(angle_brick) + dy / 2 * math.cos(angle_brick) + y;
+
+    res = res * is_inside(x_brick, y_brick, w, h);
+
+    x_brick =  dx / 2 * math.cos(angle_brick) - dy / 2 * math.sin(angle_brick) + x;
+    y_brick =  dx / 2 * math.sin(angle_brick) + dy / 2 * math.cos(angle_brick) + y;
+
+    res = res * is_inside(x_brick, y_brick, w, h);
+
+    x_brick =  dx / 2 * math.cos(angle_brick) + dy / 2 * math.sin(angle_brick) + x;
+    y_brick =  dx / 2 * math.sin(angle_brick) - dy / 2 * math.cos(angle_brick) + y;
+
+    return res;
+}
+
+function find_start(coord_angle, w, h, dx, dy) {
+    x = - w / 2;
+
+    loop {
+        y = lib_wall_function.get_y(x);
+        x_old = x;
+
+        x_end = lib_wall_function.get_x(x, dy);
+        y_end = lib_wall_function.get_y(x_end);
+
+        rotate_angle = count_angle(x, y, x_end, y_end);
+
+        x = (x + x_end) / 2;
+        y = (y + y_end) / 2;
+
+        if (check_brick(x, y, rotate_angle, dx, dy, w, h) == 1) {
+            return x_old;
+        }
+
+        x = x_old + dx / 2;
+    }
+}
+
+function layer_bricks(x_c, y_c, x, z, coord_angle, w, h, dx, dy, gap, shift) {
+    x_end = lib_wall_function.get_x(x, dy);
+    x = x + (x_end - x) * shift;
+
+    rad_scale = 3.1415/180;
+
+    loop {
+        y = lib_wall_function.get_y(x);
+
+        x_end = lib_wall_function.get_x(x, dy);
+        y_end = lib_wall_function.get_y(x_end);
+
+        x = (x + x_end) / 2;
+        y = (y + y_end) / 2;
+
+        rotate_angle = count_angle(x, y, x_end, y_end);
+
+        if (check_brick(x, y, rotate_angle, dx, dy, w, h) == 0) {
+            break;
+        }
+
+        rotate_angle = rotate_angle - coord_angle;
+
+        if (rotate_angle < (- 90.0 * rad_scale)) {
+            rotate_angle = rotate_angle + 180 * rad_scale;
+        }
+
+        x_robot = x * math.cos(coord_angle) + y * math.sin(coord_angle) + x_c;
+        y_robot = y * math.cos(coord_angle) - x * math.sin(coord_angle) + y_c;
+
+        //cube[x_robot, y_robot, z][rotate_angle / rad_scale];
+        system.echo(x_robot, " ", y_robot, " ", rotate_angle / rad_scale, "\n");
+
+        x = lib_wall_function.get_x(x_end, gap);
+    }
+}
+
+function lay_out_bricks(x_c, y_c, layers, coord_angle, w, h, dx, dy, dz, gap, shift) {
+    index = 0;
+
+    x0 = find_start(coord_angle, w, h, dx, dy);
+    layer_bricks(x_c, y_c, x0, dz * index, coord_angle, w, h, dx, dy, gap, 0);
+
+    loop {
+        if (index == layers) {
+            break;
+        }
+
+        layer_bricks(x_c, y_c, x0, dz * index, coord_angle, w, h, dx, dy, gap, shift);
+
+        index = index + 1;
+        system.echo("layer\n");
+    }
+}
+
+node main()[
+  sizes: [
+    x: $cube.sizes.x,
+    y: $cube.sizes.y,
+    z: $cube.sizes.z * 5
+  ],
+  scales: [
+    x: $cube.scales.x,
+    y: $cube.scales.y,
+    z: $cube.scales.z
+  ],
+  angles: [
+    x: 0,
+    y: 0,
+    z: 0,
+    w: 0
+  ]
+] {
+    x_c = 500;
+    y_c = 200;
+
+    rad_scale = 3.1415/180;
+
+    coord_angle = 0 * rad_scale;
+
+    edge_length = 80;
+    detail_width = 30;
+    gap = 15;
+
+    lay_out_bricks(x_c, y_c, 2, coord_angle, 1000, 400, detail_width, edge_length, 20.5, gap, 0.6);
+}
