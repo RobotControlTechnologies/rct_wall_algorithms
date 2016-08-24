@@ -1,0 +1,31 @@
+IID "lib_wall_function"
+
+include_lib config_lib_wall_function "config_lib_wall.rcml.pc"
+
+function func_dist(x, x0, len) {
+    return math.pow(x - x0, 2) + math.pow(config_lib_wall_function.func(x)
+    - config_lib_wall_function.func(x0), 2) - math.pow(len, 2);
+}
+
+function find_root(l, r, x0, len) {
+    if (r - l < 0.001) {
+        return l;
+    }
+
+    c = (r + l) / 2;
+    if (func_dist(c, x0, len) < 0) {
+        return find_root(c, r, x0, len);
+    }
+    else {
+        return find_root(l, c, x0, len);
+    }
+}
+
+export function get_x(x0, len) {
+    return find_root(x0, x0 + len, x0, len);
+}
+
+export function get_y(x) {
+    return config_lib_wall_function.func(x);
+}
+
