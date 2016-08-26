@@ -64,34 +64,46 @@ function is_inside(x, y, w_half, h_half) {
     return res;
 }
 
+function check_corner(i, dx, dy, x, y, sin, cos, w_half, h_half) {
+    sign1 = dx / 2 ;
+    sign2 = dy / 2;
+
+    if (i < 2) {
+        sign1 = -sign1;
+    }
+    if ((i == 0) || (i == 3)) {
+        sign2 = -sign2;
+    }
+
+    x_brick = sign1 * cos - sign2 * sin + x;
+    y_brick = sign1 * sin + sign2 * cos + y;
+
+    return is_inside(x_brick, y_brick, w_half, h_half);
+}
+
 function check_brick(x, y, angle_brick, dx, dy, w, h) {
     res = 1;
-    w = w / 2;
-    h = h / 2;
-    rad_scale = 3.1415 / 180;
+    w_half = w / 2;
+    h_half = h / 2;
 
-    x_brick = -dx / 2 * math.cos(angle_brick) + dy / 2 * math.sin(angle_brick) + x;
-    y_brick = -dx / 2 * math.sin(angle_brick) - dy / 2 * math.cos(angle_brick) + y;
+    sin = math.sin(angle_brick);
+    cos = math.cos(angle_brick);
 
-    res = res * is_inside(x_brick, y_brick, w, h);
+    i = 0;
 
-    x_brick = -dx / 2 * math.cos(angle_brick) - dy / 2 * math.sin(angle_brick) + x;
-    y_brick = -dx / 2 * math.sin(angle_brick) + dy / 2 * math.cos(angle_brick) + y;
+    loop {
+        res = res * check_corner(i, dx, dy, x, y, sin, cos, w_half, h_half);
 
-    res = res * is_inside(x_brick, y_brick, w, h);
-
-    x_brick =  dx / 2 * math.cos(angle_brick) - dy / 2 * math.sin(angle_brick) + x;
-    y_brick =  dx / 2 * math.sin(angle_brick) + dy / 2 * math.cos(angle_brick) + y;
-
-    res = res * is_inside(x_brick, y_brick, w, h);
-
-    x_brick =  dx / 2 * math.cos(angle_brick) + dy / 2 * math.sin(angle_brick) + x;
-    y_brick =  dx / 2 * math.sin(angle_brick) - dy / 2 * math.cos(angle_brick) + y;
+        i = i + 1;
+        if ((i == 4) || (!res)) {
+            break;
+        }
+    }
 
     return res;
 }
 
-function find_start(coord_angle, w, h, dx, dy) {
+function find_start(w, h, dx, dy) {
     x = - w / 2;
 
     loop {
@@ -151,11 +163,12 @@ function layer_bricks(x_c, y_c, x, z, coord_angle, w, h, dx, dy, gap, shift) {
     }
 }
 
-function lay_out_bricks(x_c, y_c, layers, coord_angle, w, h, dx, dy, dz, gap, shift) {
+function lay_out_bricks(x_c, y_c, layers, coord_angle, w, h, dx, dy, dz, gap) {
     index = 0;
 
-    x0 = find_start(coord_angle, w, h, dx, dy);
+    x0 = find_start(w, h, dx, dy);
     layer_bricks(x_c, y_c, x0, dz * index, coord_angle, w, h, dx, dy, gap, 0);
+    shift = 0.4;
 
     loop {
         if (index == layers) {
@@ -190,13 +203,19 @@ node main()[
     x_c = 500;
     y_c = 200;
 
+    width = 1000;
+    height = 400;
+
     rad_scale = 3.1415/180;
 
     coord_angle = 0 * rad_scale;
 
-    edge_length = 80;
-    detail_width = 30;
+    dx = 30;
+    dy = 80;
+    dz = 20.5;
     gap = 15;
 
-    lay_out_bricks(x_c, y_c, 2, coord_angle, 1000, 400, detail_width, edge_length, 20.5, gap, 0.6);
+    layers = 2;
+
+    lay_out_bricks(x_c, y_c, layers, coord_angle, width, height, dx, dy, dz, gap);
 }
