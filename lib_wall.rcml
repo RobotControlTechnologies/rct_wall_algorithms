@@ -3,8 +3,10 @@ IID "lib_wall_function"
 include_lib config_lib_wall_function "config_lib_wall.rcml.pc"
 
 function func_dist(x, x0, len) {
-    return math.pow(x - x0, 2) + math.pow(config_lib_wall_function.func(x)
-    - config_lib_wall_function.func(x0), 2) - math.pow(len, 2);
+    delta_x = x - x0;
+    delta_y = get_y(x) - get_y(x0);
+
+    return math.pow(delta_x, 2) + math.pow(delta_y, 2) - math.pow(len, 2);
 }
 
 function find_root(l, r, x0, len) {
