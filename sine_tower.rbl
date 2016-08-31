@@ -1,5 +1,8 @@
 include_rcml_lib lib_wall_function "lib_wall.rcml.pc"
 
+define  PLUS_SIGN   1.0
+define MINUS_SIGN  -1.0
+
 detail cube [
   path_to_3d_model: "cube",
   weight: 500,
@@ -108,7 +111,7 @@ function find_start(w, h, dx, dy) {
         x = (x + x_end) / 2;
         y = (y + y_end) / 2;
 
-        if (check_brick(x, y, rotate_angle, dx, dy, w, h) == 1) {
+        if (check_brick(x, y, rotate_angle, dx, dy, w, h)) {
             return x_old;
         }
 
