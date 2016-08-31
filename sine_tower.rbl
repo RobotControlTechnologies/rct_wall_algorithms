@@ -54,31 +54,11 @@ function count_angle(x1, y1, x2, y2) {
     return math.atan((x1 - x2) / (y2 - y1));
 }
 
-function is_inside(x, y, w_half, h_half) {
-    res = 1;
+function check_corner(sign1, sign2, dx, dy, x, y, sin, cos, w_half, h_half) {
+    x = sign1 * dx / 2 * cos - sign2 * dy /  2 * sin + x;
+    y = sign1 * dx / 2 * sin + sign2 * dy /  2 * cos + y;
 
-    if ((x < - w_half) || (x > w_half) || (y < -h_half) || (y > h_half)) {
-        res = 0;
-    }
-
-    return res;
-}
-
-function check_corner(i, dx, dy, x, y, sin, cos, w_half, h_half) {
-    sign1 = dx / 2 ;
-    sign2 = dy / 2;
-
-    if (i < 2) {
-        sign1 = -sign1;
-    }
-    if ((i == 0) || (i == 3)) {
-        sign2 = -sign2;
-    }
-
-    x_brick = sign1 * cos - sign2 * sin + x;
-    y_brick = sign1 * sin + sign2 * cos + y;
-
-    return is_inside(x_brick, y_brick, w_half, h_half);
+    return (x < - w_half) || (x > w_half) || (y < -h_half) || (y > h_half);
 }
 
 function check_brick(x, y, angle_brick, dx, dy, w, h) {
@@ -89,18 +69,28 @@ function check_brick(x, y, angle_brick, dx, dy, w, h) {
     sin = math.sin(angle_brick);
     cos = math.cos(angle_brick);
 
-    i = 0;
+    try {
+        if (check_corner(PLUS_SIGN, PLUS_SIGN, dx, dy, x, y, sin, cos, w_half, h_half)) {
+            throw;
+        }
 
-    loop {
-        res = res * check_corner(i, dx, dy, x, y, sin, cos, w_half, h_half);
+         if (check_corner(MINUS_SIGN, PLUS_SIGN, dx, dy, x, y, sin, cos, w_half, h_half)) {
+            throw;
+        }
 
-        i = i + 1;
-        if ((i == 4) || (!res)) {
-            break;
+         if (check_corner(PLUS_SIGN, MINUS_SIGN, dx, dy, x, y, sin, cos, w_half, h_half)) {
+            throw;
+        }
+
+         if (check_corner(MINUS_SIGN, MINUS_SIGN, dx, dy, x, y, sin, cos, w_half, h_half)) {
+            throw;
         }
     }
+    catch {
+        return 0;
+    }
 
-    return res;
+    return 1;
 }
 
 function find_start(w, h, dx, dy) {
