@@ -1,8 +1,5 @@
 include_rcml_lib lib_wall_function "lib_wall.rcml.pc"
 
-define  PLUS_SIGN   1.0
-define MINUS_SIGN  -1.0
-
 detail cube [
   path_to_3d_model: "cube",
   weight: 500,
@@ -57,9 +54,9 @@ function count_angle(x1, y1, x2, y2) {
     return math.atan((x1 - x2) / (y2 - y1));
 }
 
-function check_corner(sign1, sign2, dx, dy, x, y, sin, cos, w_half, h_half) {
-    x = sign1 * dx / 2 * cos - sign2 * dy /  2 * sin + x;
-    y = sign1 * dx / 2 * sin + sign2 * dy /  2 * cos + y;
+function check_corner(dx, dy, x, y, sin, cos, w_half, h_half) {
+    x = dx/2 * cos - dy/2 * sin + x;
+    y = dx/2 * sin + dy/2 * cos + y;
 
     if ((x < - w_half) || (x > w_half) || (y < -h_half) || (y > h_half)) {
         throw;
@@ -75,10 +72,10 @@ function check_brick(x, y, angle_brick, dx, dy, w, h) {
     cos = math.cos(angle_brick);
 
     try {
-        check_corner(PLUS_SIGN,  PLUS_SIGN,  dx, dy, x, y, sin, cos, w_half, h_half);
-        check_corner(MINUS_SIGN, PLUS_SIGN,  dx, dy, x, y, sin, cos, w_half, h_half);
-        check_corner(PLUS_SIGN,  MINUS_SIGN, dx, dy, x, y, sin, cos, w_half, h_half);
-        check_corner(MINUS_SIGN, MINUS_SIGN, dx, dy, x, y, sin, cos, w_half, h_half);
+        check_corner( dx,  dy, x, y, sin, cos, w_half, h_half);
+        check_corner(-dx,  dy, x, y, sin, cos, w_half, h_half);
+        check_corner( dx, -dy, x, y, sin, cos, w_half, h_half);
+        check_corner(-dx, -dy, x, y, sin, cos, w_half, h_half);
     }
     catch {
         return 0;
